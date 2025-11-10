@@ -6,10 +6,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "start": "node dist/crawler.js",
-    "example:basic": "ts-node src/examples/basic-crawl.ts",
-    "example:form": "ts-node src/examples/form-interaction.ts",
-    "example:custom": "ts-node src/examples/custom-agent.ts",
+    "crawl": "node dist/crawler.js",
+    "start": "npm run crawl",
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean": "rm -rf dist"
   },

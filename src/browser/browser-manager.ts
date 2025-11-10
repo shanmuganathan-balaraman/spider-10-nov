@@ -81,7 +81,38 @@ export async function navigateToUrl(
     const page = await createPage(pageId);
     logger.info(`Navigating to ${url}`);
 
-    await page.goto(url, { waitUntil: "domcontentloaded" });
+    // Wait for networkidle for JS-heavy sites (React, Vue, Next.js, etc.)
+    // Playwright's "networkidle" waits for network to be idle (similar to Puppeteer's networkidle2)
+    try {
+      await page.goto(url, { waitUntil: "networkidle", timeout: 45000 });
+    } catch (timeoutError) {
+      logger.debug("networkidle timeout, retrying with load");
+      // Fallback to just page load for very slow sites
+      await page.goto(url, { waitUntil: "load", timeout: 45000 });
+    }
+
+    // Additional wait for SPAs and dynamic content to render
+    try {
+      // Wait for React/Vue app to mount and render content
+      await page.waitForFunction(
+        () => {
+          const body = document.body;
+          return body && (
+            body.children.length > 1 ||  // Multiple child elements
+            body.innerText.trim().length > 50 || // Meaningful text content
+            document.querySelectorAll('div[id*="root"], div[id*="app"], div[class*="app"]').length > 0 // SPA containers
+          );
+        },
+        { timeout: 10000 }
+      );
+      logger.info("Dynamic content detected and loaded");
+    } catch (contentWaitError) {
+      // If dynamic content doesn't load, continue anyway
+      logger.debug("No dynamic content detected, continuing with static content");
+    }
+
+    // Additional 2-second wait for lazy-loaded components
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     logger.info(`Successfully navigated to ${url}`);
     return {
@@ -104,8 +135,17 @@ export async function getPageDOM(pageId: string = "default"): Promise<string> {
   }
 
   try {
+    // Wait a bit more for dynamic content if needed
+    await page.waitForTimeout(1000);
+    
     const dom = await page.content();
-    logger.debug(`Retrieved DOM for page ${pageId}`);
+    logger.debug(`Retrieved DOM for page ${pageId}, length: ${dom.length}`);
+    
+    // Log if DOM seems empty (likely SPA not rendered)
+    if (dom.length < 500 || !dom.includes('<body>')) {
+      logger.warn(`DOM appears minimal for page ${pageId} - possible SPA requiring more wait time`);
+    }
+    
     return dom;
   } catch (error) {
     logger.error(`Failed to get DOM for page ${pageId}:`, error);
@@ -123,8 +163,20 @@ export async function getPageText(pageId: string = "default"): Promise<string> {
   }
 
   try {
-    const text = await page.evaluate(() => document.body.innerText);
-    logger.debug(`Retrieved text for page ${pageId}`);
+    // Wait a bit more for dynamic content if needed
+    await page.waitForTimeout(1000);
+    
+    const text = await page.evaluate(() => {
+      return document.body ? document.body.innerText.trim() : '';
+    });
+    
+    logger.debug(`Retrieved text for page ${pageId}, length: ${text.length}`);
+    
+    // Log if text seems empty (likely SPA not rendered)
+    if (text.length < 50) {
+      logger.warn(`Text content appears minimal for page ${pageId} - possible SPA requiring more wait time`);
+    }
+    
     return text;
   } catch (error) {
     logger.error(`Failed to get text for page ${pageId}:`, error);
@@ -287,8 +339,68 @@ export async function cleanupBrowser(): Promise<void> {
 }
 
 /**
+ * Get current page URL
+ */
+export function getCurrentPageUrl(pageId: string = "default"): string {
+  const page = getPage(pageId);
+  if (!page) {
+    return "";
+  }
+  return page.url();
+}
+
+/**
+ * Get current page title
+ */
+export async function getPageTitle(pageId: string = "default"): Promise<string> {
+  const page = getPage(pageId);
+  if (!page) {
+    return "";
+  }
+  return await page.title();
+}
+
+/**
  * Get current browser state
  */
 export function getBrowserState(): BrowserState {
   return browserState;
+}
+
+/**
+ * Wait for dynamic content to load (helper for modern JS frameworks)
+ */
+export async function waitForDynamicContent(
+  pageId: string = "default",
+  timeout: number = 10000
+): Promise<boolean> {
+  const page = getPage(pageId);
+  if (!page) {
+    throw new Error(`Page with ID ${pageId} not found`);
+  }
+
+  try {
+    // Wait for any body content to be present
+    await page.waitForFunction(
+      () => {
+        const body = document.body;
+        return body && body.children.length > 0 && body.innerText.length > 100;
+      },
+      { timeout }
+    );
+    logger.info(`Dynamic content loaded for page ${pageId}`);
+    return true;
+  } catch (error) {
+    logger.warn(`Timeout waiting for dynamic content on page ${pageId}`);
+    return false;
+  }
+}
+
+/**
+ * Add delay for lazy-loaded content
+ */
+export async function addLoadingDelay(
+  delayMs: number = 2000
+): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
 }

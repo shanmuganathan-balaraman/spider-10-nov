@@ -1,28 +1,18 @@
 /**
  * Main Entry Point for Spider Web Crawler
- * Functional approach - all exports are functions, no classes
+ * Use npm run crawl <URL> [maxDepth] to crawl websites
  */
 
-// Crawler functions
+// Autonomous Crawler Agent functions
 export {
-  initializeCrawler,
-  runCrawl,
-  cleanupCrawler,
-  executeCrawl,
-  type CrawlerConfig,
-  type CrawlerResult,
-} from "./crawler";
-
-// Agent functions
-export {
-  initializeAgent,
-  crawl,
-  closeAgent,
-  getTools,
-  getAgentState,
-  type CrawlOptions,
-  type CrawlResult,
-} from "./agent/web-crawler-agent";
+  initializeAutonomousCrawlerAgent,
+  createAutonomousCrawler,
+  startAutonomousCrawl,
+  closeAutonomousCrawlerAgent,
+  getAutonomousCrawlerState,
+  createFullAutonomousCrawler,
+  type AutonomousCrawlConfig,
+} from "./agent/autonomous-crawler-agent";
 
 // Browser functions
 export {
@@ -40,30 +30,11 @@ export {
   closePage,
   cleanupBrowser,
   getBrowserState,
+  waitForDynamicContent,
+  addLoadingDelay,
+  getCurrentPageUrl,
+  getPageTitle,
 } from "./browser/browser-manager";
 
 // Logger function
 export { createLogger, LogLevel } from "./utils/logger";
-
-// Configuration
-export { config } from "./config";
-
-// Tool creation functions
-export {
-  createNavigatePageTool,
-  createGetPageDOMTool,
-  createGetPageTextTool,
-  createClickElementTool,
-  createFillInputTool,
-  createGetElementTextTool,
-  createWaitForElementTool,
-  createScreenshotTool,
-  getBrowserTools,
-} from "./tools/browser-tools";
-
-export {
-  createAnalyzePageContentTool,
-  createCreateExplorationPlanTool,
-  createSummarizeFindingsTool,
-  getAnalysisTools,
-} from "./tools/analysis-tools";

@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "name": "Autonomous Crawl",
+    "baseUrl": "http://localhost:5173",
+    "exploredAt": "2025-11-10T14:25:44.380Z",
+    "duration": 1,
+    "explorerVersion": "1.0.0"
+  },
+  "navigation": {
+    "globalNav": [],
+    "features": {}
+  },
+  "pages": {},
+  "patterns": {},
+  "crossFeatureGraph": {
+    "summary": {
+      "totalConnections": 0,
+      "bidirectionalConnections": 0
+    },
+    "edges": []
+  },
+  "stats": {
+    "totalPages": 0,
+    "pagesFullyExplored": 0,
+    "pagesQuickCataloged": 0,
+    "pagesByType": {},
+    "actionsByType": {},
+    "coverage": 0
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "name": "Example App",
+    "baseUrl": "https://www.basedynamics.com/",
+    "exploredAt": "2025-11-10T11:02:33.545Z",
+    "duration": 0,
+    "explorerVersion": "1.0.0"
+  },
+  "navigation": {
+    "globalNav": [],
+    "features": {}
+  },
+  "pages": {},
+  "patterns": {},
+  "crossFeatureGraph": {
+    "summary": {
+      "totalConnections": 0,
+      "bidirectionalConnections": 0
+    },
+    "edges": []
+  },
+  "stats": {
+    "totalPages": 0,
+    "pagesFullyExplored": 0,
+    "pagesQuickCataloged": 0,
+    "pagesByType": {},
+    "actionsByType": {},
+    "coverage": 0
+  }
+}
