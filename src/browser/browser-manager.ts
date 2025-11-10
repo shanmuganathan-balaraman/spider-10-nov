@@ -18,10 +18,23 @@ let browserState: BrowserState = {
 };
 
 /**
+ * Check if browser is initialized
+ */
+export function isBrowserInitialized(): boolean {
+  return !!(browserState.browser && browserState.context);
+}
+
+/**
  * Initialize the browser
  */
 export async function initializeBrowser(): Promise<void> {
   try {
+    // Check if browser is already initialized
+    if (isBrowserInitialized()) {
+      logger.info("Browser already initialized, skipping...");
+      return;
+    }
+
     logger.info("Initializing browser...");
     browserState.browser = await chromium.launch({
       headless: config.headlessMode,

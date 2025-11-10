@@ -5,7 +5,7 @@
 
 import { DynamicTool } from "@langchain/core/tools";
 import { getBrowserTools as getBrowserToolsBase } from "../tools/browser-tools";
-import { initializeBrowser } from "../browser/browser-manager";
+import { initializeBrowser, isBrowserInitialized } from "../browser/browser-manager";
 import { createLogger } from "../utils/logger";
 
 const logger = createLogger("BrowserToolsIntegration");
@@ -15,9 +15,13 @@ const logger = createLogger("BrowserToolsIntegration");
  */
 export async function getBrowserTools(): Promise<DynamicTool[]> {
   try {
-    // Initialize browser first
-    await initializeBrowser();
-    logger.info("✅ Browser initialized for agent tools");
+    if (isBrowserInitialized()) {
+      logger.info("✅ Browser already initialized, using existing instance");
+    } else {
+      logger.info("🔄 Initializing browser for agent tools...");
+      await initializeBrowser();
+      logger.info("✅ Browser initialized for agent tools");
+    }
     
     return getBrowserToolsBase();
   } catch (error) {
