@@ -1,0 +1,44 @@
+{
+  "name": "spider-web-crawler",
+  "version": "1.0.0",
+  "description": "Industry-standard agentic AI web crawler using LangChain, Playwright, and TypeScript",
+  "main": "dist/crawler.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/crawler.js",
+    "example:basic": "ts-node src/examples/basic-crawl.ts",
+    "example:form": "ts-node src/examples/form-interaction.ts",
+    "example:custom": "ts-node src/examples/custom-agent.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "web-crawler",
+    "langchain",
+    "ai-agent",
+    "playwright",
+    "autonomous",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@langchain/anthropic": "^1.0.0",
+    "@langchain/classic": "^1.0.0",
+    "@langchain/community": "^1.0.0",
+    "@langchain/core": "^1.0.3",
+    "@langchain/openai": "^1.0.0",
+    "dotenv": "^17.2.3",
+    "langchain": "^1.0.3",
+    "openai": "^4.52.0",
+    "playwright": "^1.56.1",
+    "together-ai": "^0.30.0",
+    "zod": "^4.1.12"
+  }
+}
