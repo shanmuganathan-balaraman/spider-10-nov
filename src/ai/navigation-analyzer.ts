@@ -8,6 +8,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { createLogger } from "../utils/logger";
 import { config } from "../config";
+import { LLMFactory } from './llm-factory';
 
 const logger = createLogger("NavigationAnalyzer");
 
@@ -67,15 +68,7 @@ export async function analyzeNavigationStructure(
   }
 ): Promise<NavigationStructure> {
   try {
-    const model = new ChatOpenAI({
-      apiKey: config.togetherAiApiKey,
-      model: config.togetherAiModel,
-      configuration: {
-        baseURL: "https://api.together.xyz/v1",
-      },
-      temperature: 0.1,
-      maxTokens: 8000, // Increased tokens for complete navigation analysis JSON
-    });
+    const model = LLMFactory.createNavigationAnalyzerLLM();
 
     logger.info(`Analyzing navigation structure: ${pageUrl}`);
 

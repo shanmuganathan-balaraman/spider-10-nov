@@ -10,6 +10,7 @@ import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { config } from '../config';
 import { createLogger } from '../utils/logger';
 import * as browserManager from '../browser/browser-manager';
+import { LLMFactory } from './llm-factory';
 
 const logger = createLogger('ModalDetector');
 
@@ -38,15 +39,7 @@ export interface ModalDetectionResult {
  * Create LLM for modal detection
  */
 function createModalDetectorLLM(): ChatOpenAI {
-  return new ChatOpenAI({
-    apiKey: config.togetherAiApiKey,
-    model: config.togetherAiModel,
-    configuration: {
-      baseURL: 'https://api.together.xyz/v1',
-    },
-    temperature: 0.1, // Lower temperature for more deterministic detection
-    maxTokens: 2000,
-  });
+  return LLMFactory.createModalDetectorLLM();
 }
 
 /**

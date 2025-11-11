@@ -7,6 +7,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { createLogger } from "../utils/logger";
 import { config } from "../config";
 import { z } from "zod";
+import { LLMFactory } from './llm-factory';
 
 const logger = createLogger("PageAnalyzer");
 
@@ -73,13 +74,9 @@ export async function analyzePage(
   pageConfig: PageAnalysisConfig = {}
 ): Promise<PageAnalysisResult> {
   try {
-    const model = new ChatOpenAI({
-      apiKey: process.env.OPENAI_API_KEY || config.togetherAiApiKey,
-      model: config.togetherAiModel,
-      configuration: {
-        baseURL: "https://api.together.xyz/v1",
-      },
+    const model = LLMFactory.create({
       temperature: 0.1,
+      maxTokens: 4000,
     });
 
     logger.info(`Analyzing page: ${pageUrl}`);
@@ -127,13 +124,9 @@ export async function analyzePageStructure(
   }
 ): Promise<Record<string, any>> {
   try {
-    const model = new ChatOpenAI({
-      apiKey: process.env.OPENAI_API_KEY || config.togetherAiApiKey,
-      model: config.togetherAiModel,
-      configuration: {
-        baseURL: "https://api.together.xyz/v1",
-      },
+    const model = LLMFactory.create({
       temperature: 0.1,
+      maxTokens: 2000,
     });
 
     const structurePrompt = `Analyze the page structure and return a JSON object with:
@@ -197,13 +190,9 @@ export async function detectModals(
   }>
 > {
   try {
-    const model = new ChatOpenAI({
-      apiKey: process.env.OPENAI_API_KEY || config.togetherAiApiKey,
-      model: config.togetherAiModel,
-      configuration: {
-        baseURL: "https://api.together.xyz/v1",
-      },
+    const model = LLMFactory.create({
       temperature: 0.1,
+      maxTokens: 2000,
     });
 
     const modalPrompt = `Identify all modal dialogs, popups, or overlay elements in this page.

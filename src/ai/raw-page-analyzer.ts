@@ -10,6 +10,7 @@ import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { config } from '../config';
 import { createLogger } from '../utils/logger';
 import * as browserManager from '../browser/browser-manager';
+import { LLMFactory } from './llm-factory';
 
 const logger = createLogger('RawPageAnalyzer');
 
@@ -70,15 +71,7 @@ export interface AIPageAnalysis {
  * Create LLM for raw page analysis
  */
 function createRawPageAnalyzerLLM(): ChatOpenAI {
-  return new ChatOpenAI({
-    apiKey: config.togetherAiApiKey,
-    model: config.togetherAiModel,
-    configuration: {
-      baseURL: 'https://api.together.xyz/v1',
-    },
-    temperature: 0.2,
-    maxTokens: 8000,
-  });
+  return LLMFactory.createRawPageAnalyzerLLM();
 }
 
 /**

@@ -13,6 +13,7 @@ import { getBrowserTools } from "./browser-tools-integration";
 import { getCrawlerAnalysisTools } from "../tools/crawler-analysis-tools";
 import { getAuthenticationTools } from "../tools/authentication-tools";
 import { PatternDetector, createPatternDetector } from "../ai/pattern-detector";
+import { LLMFactory } from "../ai/llm-factory";
 
 const logger = createLogger("AutonomousCrawlerAgent");
 
@@ -93,14 +94,7 @@ export async function initializeAutonomousCrawlerAgent(
     );
 
     // Initialize LLM
-    autonomousCrawlerState.model = new ChatOpenAI({
-      apiKey: config.togetherAiApiKey,
-      model: config.togetherAiModel,
-      configuration: {
-        baseURL: "https://api.together.xyz/v1",
-      },
-      temperature: 0.1,
-    });
+    autonomousCrawlerState.model = LLMFactory.createCrawlerPlannerLLM();
 
     // Get browser tools (this also initializes the browser)
     const browserTools = await getBrowserTools();

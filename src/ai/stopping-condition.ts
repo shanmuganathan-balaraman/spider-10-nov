@@ -6,6 +6,7 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { createLogger } from "../utils/logger";
 import { config } from "../config";
+import { LLMFactory } from './llm-factory';
 
 const logger = createLogger("StoppingCondition");
 
@@ -54,13 +55,9 @@ export async function evaluateStoppingCondition(
   exploredPageTypes: Set<string>
 ): Promise<StoppingConditionResult> {
   try {
-    const model = new ChatOpenAI({
-      apiKey: process.env.OPENAI_API_KEY || config.togetherAiApiKey,
-      model: config.togetherAiModel,
-      configuration: {
-        baseURL: "https://api.together.xyz/v1",
-      },
+    const model = LLMFactory.create({
       temperature: 0.1,
+      maxTokens: 1000,
     });
 
     logger.debug(`Evaluating stopping condition for feature: ${featureName}`);
