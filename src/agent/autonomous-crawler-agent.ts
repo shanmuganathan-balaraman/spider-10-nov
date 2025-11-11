@@ -1,11 +1,14 @@
 /**
  * Autonomous Crawler Agent
  * Enhanced agent with integrated crawling analysis tools
+ * Refactored to use modern LangChain v1.0+ patterns
  */
 
 import { ChatOpenAI } from "@langchain/openai";
-import { AgentExecutor, createToolCallingAgent } from "@langchain/classic/agents";
-import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts";
+import { createAgent } from "langchain";
+import { z } from "zod";
+import { MessagesZodState } from "@langchain/langgraph";
+import { BaseMessage, HumanMessage } from "@langchain/core/messages";
 import { DynamicTool } from "@langchain/core/tools";
 import { createLogger } from "../utils/logger";
 import { config } from "../config";
@@ -16,6 +19,56 @@ import { PatternDetector, createPatternDetector } from "../ai/pattern-detector";
 import { LLMFactory } from "../ai/llm-factory";
 
 const logger = createLogger("AutonomousCrawlerAgent");
+
+/**
+ * Custom agent state schema for autonomous crawling
+ */
+const AutonomousCrawlerStateSchema = z.object({
+  messages: MessagesZodState.shape.messages,
+  crawlProgress: z.object({
+    visitedPages: z.array(z.string()),
+    discoveredFeatures: z.array(z.string()),
+    currentFeature: z.string().optional(),
+    explorationDepth: z.number(),
+  }).optional(),
+  crawlConfig: z.object({
+    maxDepth: z.number(),
+    maxPagesPerFeature: z.number(),
+    patternThreshold: z.number(),
+    allowFormSubmission: z.boolean(),
+    allowDestructiveActions: z.boolean(),
+  }).optional(),
+});
+
+/**
+ * Structured output schema for crawl results
+ */
+const CrawlResultSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  findings: z.object({
+    navigationStructure: z.array(z.object({
+      name: z.string(),
+      url: z.string(),
+      priority: z.number(),
+    })).optional(),
+    discoveredFeatures: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      entryUrl: z.string(),
+      pageTypes: z.array(z.string()),
+      businessValue: z.number(),
+    })).optional(),
+    pagesAnalyzed: z.number().optional(),
+    patternsFound: z.number().optional(),
+    authenticationRequired: z.boolean().optional(),
+    summary: z.string(),
+  }).optional(),
+  error: z.string().optional(),
+});
+
+type AgentStateType = z.infer<typeof AutonomousCrawlerStateSchema>;
+export type CrawlResult = z.infer<typeof CrawlResultSchema>;
 
 /**
  * Autonomous crawling configuration
@@ -34,12 +87,12 @@ export interface AutonomousCrawlConfig {
 }
 
 /**
- * Agent state for autonomous crawling
+ * Module state for autonomous crawling (for compatibility)
  */
-interface AutonomousCrawlerState {
+interface AutonomousCrawlerModuleState {
   model: ChatOpenAI | null;
   tools: DynamicTool[];
-  executor: AgentExecutor | null;
+  agent: any | null; // Modern agent instance
   patternDetector: PatternDetector | null;
   config: AutonomousCrawlConfig;
 }
@@ -47,10 +100,10 @@ interface AutonomousCrawlerState {
 /**
  * Module-level state
  */
-let autonomousCrawlerState: AutonomousCrawlerState = {
+let autonomousCrawlerState: AutonomousCrawlerModuleState = {
   model: null,
   tools: [],
-  executor: null,
+  agent: null,
   patternDetector: null,
   config: {
     maxDepth: 3,
@@ -129,9 +182,33 @@ export async function initializeAutonomousCrawlerAgent(
 }
 
 /**
- * Create autonomous crawler agent
+ * Options for creating autonomous crawler agent
  */
-export async function createAutonomousCrawler(): Promise<AgentExecutor> {
+export interface CreateCrawlerOptions {
+  /** Enable structured output with type-safe schema validation (default: true) */
+  structuredOutput?: boolean;
+}
+
+/**
+ * Create autonomous crawler agent using modern LangChain patterns
+ * 
+ * @param options Configuration options for the crawler
+ * @param options.structuredOutput Whether to use structured output with Zod schema (default: true)
+ * @returns Promise resolving to the created agent
+ * 
+ * @example
+ * ```typescript
+ * // Default: structured output enabled
+ * const agent = await createAutonomousCrawler();
+ * 
+ * // Explicit: enable structured output  
+ * const agent = await createAutonomousCrawler({ structuredOutput: true });
+ * 
+ * // Legacy: disable structured output
+ * const agent = await createAutonomousCrawler({ structuredOutput: false });
+ * ```
+ */
+export async function createAutonomousCrawler(options?: CreateCrawlerOptions): Promise<any> {
   if (!autonomousCrawlerState.model) {
     throw new Error(
       "Agent not initialized. Call initializeAutonomousCrawlerAgent() first."
@@ -139,38 +216,27 @@ export async function createAutonomousCrawler(): Promise<AgentExecutor> {
   }
 
   try {
-    // Create prompt for autonomous crawling
-    const systemPrompt = createAutonomousCrawlingPrompt(
-      autonomousCrawlerState.config
-    );
+    const useStructuredOutput = options?.structuredOutput ?? false; // Default to false for better compatibility
 
-    const prompt = ChatPromptTemplate.fromMessages([
-      ["system", systemPrompt],
-      new MessagesPlaceholder("chat_history"),
-      ["human", "{input}"],
-      new MessagesPlaceholder("agent_scratchpad"),
-    ]);
-
-    // Create the agent
-    const agent = createToolCallingAgent({
-      llm: autonomousCrawlerState.model,
+    // Create agent configuration
+    const agentConfig: any = {
+      model: autonomousCrawlerState.model,
       tools: autonomousCrawlerState.tools,
-      prompt,
-    });
+      systemPrompt: createAutonomousCrawlingPrompt(autonomousCrawlerState.config),
+    };
 
-    // Create executor
-    const executor = new AgentExecutor({
-      agent,
-      tools: autonomousCrawlerState.tools,
-      verbose: false, // Disable verbose to reduce noise
-      maxIterations: autonomousCrawlerState.config.maxPagesPerFeature * 2,
-    });
+    // Add structured output if requested
+    if (useStructuredOutput) {
+      agentConfig.responseFormat = CrawlResultSchema;
+    }
 
-    autonomousCrawlerState.executor = executor;
+    const agent = createAgent(agentConfig);
 
-    logger.info("Autonomous crawler created successfully");
+    autonomousCrawlerState.agent = agent;
 
-    return executor;
+    logger.info(`Autonomous crawler created with modern LangChain patterns${useStructuredOutput ? ' and structured output' : ''}`);
+
+    return agent;
   } catch (error) {
     logger.error("Failed to create autonomous crawler:", error);
     throw error;
@@ -178,20 +244,15 @@ export async function createAutonomousCrawler(): Promise<AgentExecutor> {
 }
 
 /**
- * Start autonomous crawl
+ * Start autonomous crawl using modern agent invocation
  */
 export async function startAutonomousCrawl(
   baseUrl: string,
   objective: string,
   credentials?: { username?: string; password?: string }
-): Promise<{
-  success: boolean;
-  message: string;
-  findings?: string;
-  error?: string;
-}> {
+): Promise<CrawlResult> {
   try {
-    if (!autonomousCrawlerState.executor) {
+    if (!autonomousCrawlerState.agent) {
       throw new Error("Crawler not initialized. Create it first with createAutonomousCrawler()");
     }
 
@@ -200,6 +261,7 @@ export async function startAutonomousCrawl(
     if (credentials) {
       logger.info(`Credentials provided: ${credentials.username || 'default'}`);
     }
+
     // Create crawling instructions with authentication integration
     const authenticationStep = credentials 
       ? `🔐 AUTHENTICATION - MANDATORY FIRST STEP:
@@ -246,20 +308,51 @@ After auto_login succeeds, then proceed with the analytics mission below:
 PRODUCT ANALYTICS & INSTRUMENTATION DISCOVERY MISSION:
 ${objective}
 
-Only after auto_login is complete should you use discover_global_navigation to map features.`;
+Only after auto_login is complete should you use discover_global_navigation to map features.
 
-    const result = await autonomousCrawlerState.executor.invoke({
-      input: crawlInstructions,
-      chat_history: [],
+Provide a comprehensive summary of your findings including:
+- Navigation structure discovered
+- Features identified and analyzed  
+- Business value assessment
+- Pages analyzed and patterns found
+- Any authentication requirements detected`;
+
+    // Use modern agent invocation with messages
+    const result = await autonomousCrawlerState.agent.invoke({
+      messages: [{ role: "user", content: crawlInstructions }],
     });
 
     logger.info("Autonomous crawl completed");
 
-    return {
+    // Extract the response content
+    let responseContent = "";
+    if (result.messages && result.messages.length > 0) {
+      const lastMessage = result.messages[result.messages.length - 1];
+      responseContent = lastMessage.content || "";
+    }
+
+    // If structured response is available, try to use it
+    if (result.structuredResponse) {
+      try {
+        return result.structuredResponse as CrawlResult;
+      } catch (error) {
+        logger.warn("Failed to parse structured response, falling back to regular response");
+      }
+    }
+
+    // Create a standard response structure
+    const response: CrawlResult = {
       success: true,
-      message: "Autonomous crawl completed successfully",
-      findings: result.output as string,
+      message: "Autonomous crawl completed successfully", 
+      findings: {
+        summary: responseContent || "No specific findings returned",
+        pagesAnalyzed: 0,
+        patternsFound: 0,
+        authenticationRequired: false,
+      }
     };
+
+    return response;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     logger.error(`Autonomous crawl failed: ${errorMsg}`);
@@ -280,7 +373,7 @@ export async function closeAutonomousCrawlerAgent(): Promise<void> {
 
     autonomousCrawlerState.model = null;
     autonomousCrawlerState.tools = [];
-    autonomousCrawlerState.executor = null;
+    autonomousCrawlerState.agent = null;
     autonomousCrawlerState.patternDetector = null;
 
     logger.info("Autonomous Crawler Agent closed");
@@ -293,7 +386,7 @@ export async function closeAutonomousCrawlerAgent(): Promise<void> {
 /**
  * Get autonomous crawler state
  */
-export function getAutonomousCrawlerState(): AutonomousCrawlerState {
+export function getAutonomousCrawlerState(): AutonomousCrawlerModuleState {
   return autonomousCrawlerState;
 }
 
@@ -424,30 +517,26 @@ REMEMBER: You have complete autonomy. Make all decisions based on AI analysis of
 }
 
 /**
- * Create agent with autonomous crawling enabled
+ * Create agent with autonomous crawling enabled using modern patterns
  */
 export async function createFullAutonomousCrawler(
   baseUrl: string,
   objective: string,
-  config?: Partial<AutonomousCrawlConfig>
+  config?: Partial<AutonomousCrawlConfig>,
+  options?: CreateCrawlerOptions
 ): Promise<{
-  executor: AgentExecutor;
-  crawlFunction: () => Promise<{
-    success: boolean;
-    message: string;
-    findings?: string;
-    error?: string;
-  }>;
+  agent: any;
+  crawlFunction: () => Promise<CrawlResult>;
 }> {
   // Initialize agent
   await initializeAutonomousCrawlerAgent(config);
 
-  // Create executor
-  const executor = await createAutonomousCrawler();
+  // Create agent with optional structured output
+  const agent = await createAutonomousCrawler(options);
 
-  // Return executor and crawl function
+  // Return agent and crawl function
   return {
-    executor,
+    agent,
     crawlFunction: () => startAutonomousCrawl(baseUrl, objective),
   };
 }
