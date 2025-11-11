@@ -75,42 +75,7 @@ async function main() {
   console.log(`🔐 Credentials: ${username} / ${'*'.repeat(password.length)}`);
   console.log(`⏳ Initializing...`);
 
-  const objective = `PRODUCT ANALYTICS & INSTRUMENTATION DISCOVERY:
-
-BUSINESS OBJECTIVES:
-1. **Analytics Instrumentation Audit** - Identify all elements that should be tracked for product analytics
-2. **User Journey Mapping** - Discover critical user flows and conversion paths  
-3. **SDK Detection & Event Mapping** - Detect existing analytics SDKs and map UI interactions to tracking events
-4. **Feature Discovery** - Catalog all product features, workflows, and user capabilities
-5. **Conversion Funnel Analysis** - Identify signup, onboarding, purchase, and activation flows
-
-INSTRUMENTATION PRIORITIES:
-🎯 **Primary Actions** (Core Business Events):
-   - User registration, login, account creation
-   - Purchase flows, subscription upgrades, payment processes  
-   - Feature activation, configuration, and first-use events
-   - Content creation, file uploads, data submissions
-   - Critical user decisions and conversion points
-
-🎯 **Secondary Actions** (Supporting Analytics):
-   - Navigation patterns, search behavior, filtering/sorting
-   - Content engagement, modal opens, tab switches
-   - Settings changes, preference updates, customizations
-   - Social sharing, invitations, referral actions
-
-🎯 **High-Value Business Events**:
-   - Trial-to-paid conversions, subscription changes
-   - Feature discovery moments, help/support interactions
-   - Error states, abandonment points, friction detection
-   - Cross-feature usage patterns, integration activations
-
-DELIVERABLES:
-✅ Complete sitemap with feature classification
-✅ Analytics instrumentation recommendations for each page
-✅ User journey flows with conversion tracking points  
-✅ SDK detection results and event mapping
-✅ Recommended tracking implementation plan
-✅ Product metrics and KPI identification opportunities`;
+  // Objectives are now managed centrally through the prompt system
 
   try {
     // Initialize browser
@@ -142,7 +107,7 @@ DELIVERABLES:
 
     // Start autonomous crawl
     console.log(`🚀 Starting crawl...`);
-    const crawlResult = await startAutonomousCrawl(targetUrl, objective, {
+    const crawlResult = await startAutonomousCrawl(targetUrl, "analytics discovery", {
       username,
       password,
     });
@@ -172,7 +137,7 @@ DELIVERABLES:
     storage.saveSitemap(sitemap.toJSON());
     storage.createSummaryReport({
       crawlStatus: crawlResult.success ? "completed" : "failed",
-      objective,
+      objective: "Product Analytics & Instrumentation Discovery",
       findings: crawlResult.findings,
       targetUrl,
       maxDepth,
