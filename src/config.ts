@@ -9,10 +9,11 @@ export const config = {
   isProduction: process.env.NODE_ENV === "production",
 
   // AI Provider Configuration (Simplified)
-  aiProvider: process.env.AI_PROVIDER || "openai",
-  aiModel: process.env.AI_MODEL || "gpt-4o-mini",
+  // Use TogetherAI with Llama for testing, fallback to OpenAI
+  aiProvider: process.env.AI_PROVIDER || "togetherai",
+  aiModel: process.env.AI_MODEL || "meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo",
   aiTemperature: parseFloat(process.env.AI_TEMPERATURE || "0.7"),
-  aiMaxTokens: parseInt(process.env.AI_MAX_TOKENS || "4000"),
+  aiMaxTokens: parseInt(process.env.AI_MAX_TOKENS || "8192"),
 
   // API Keys
   openaiApiKey: process.env.OPENAI_API_KEY,

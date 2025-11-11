@@ -87,12 +87,12 @@ function createTogetherAILLM({
 
 // Simple factory object that just uses the configured model for everything
 export const LLMFactory = {
-  createRawPageAnalyzerLLM: (): ChatOpenAI => createLLM({ temperature: 0.2, maxTokens: 8000 }),
-  createLoginAnalyzerLLM: (): ChatOpenAI => createLLM({ temperature: 0.1, maxTokens: 2000 }),
-  createModalDetectorLLM: (): ChatOpenAI => createLLM({ temperature: 0.1, maxTokens: 2000 }),
-  createAutonomousCrawlerLLM: (): ChatOpenAI => createLLM({ temperature: 0.3, maxTokens: 4000 }),
-  createNavigationAnalyzerLLM: (): ChatOpenAI => createLLM({ temperature: 0.1, maxTokens: 8000 }),
-  createCrawlerPlannerLLM: (): ChatOpenAI => createLLM({ temperature: 0.3, maxTokens: 4000 }),
+  createRawPageAnalyzerLLM: (): ChatOpenAI => createLLM({ temperature: 0.2, maxTokens: 16384 }),
+  createLoginAnalyzerLLM: (): ChatOpenAI => createLLM({ temperature: 0.1, maxTokens: 4096 }),
+  createModalDetectorLLM: (): ChatOpenAI => createLLM({ temperature: 0.1, maxTokens: 4096 }),
+  createAutonomousCrawlerLLM: (): ChatOpenAI => createLLM({ temperature: 0.3, maxTokens: 8192 }),
+  createNavigationAnalyzerLLM: (): ChatOpenAI => createLLM({ temperature: 0.1, maxTokens: 16384 }),
+  createCrawlerPlannerLLM: (): ChatOpenAI => createLLM({ temperature: 0.3, maxTokens: 8192 }),
   create: createLLM
 };
 
