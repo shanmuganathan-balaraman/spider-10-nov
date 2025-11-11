@@ -282,41 +282,59 @@ export async function startAutonomousCrawl(
       credentials ? { username: credentials.username || '', password: credentials.password || '' } : undefined
     );
     // Use modern agent invocation with messages
-    const result = await autonomousCrawlerState.agent.invoke({
-      messages: [{ role: "user", content: crawlInstructions }],
-    });
+    try {
+      logger.info("Starting agent execution...");
+      const result = await autonomousCrawlerState.agent.invoke({
+        messages: [{ role: "user", content: crawlInstructions }],
+      });
 
-    logger.info("Autonomous crawl completed");
+      logger.info("Autonomous crawl completed successfully");
 
-    // Extract the response content
-    let responseContent = "";
-    if (result.messages && result.messages.length > 0) {
-      const lastMessage = result.messages[result.messages.length - 1];
-      responseContent = lastMessage.content || "";
-    }
-
-    // If structured response is available, try to use it
-    if (result.structuredResponse) {
-      try {
-        return result.structuredResponse as CrawlResult;
-      } catch (error) {
-        logger.warn("Failed to parse structured response, falling back to regular response");
+      // Extract the response content
+      let responseContent = "";
+      if (result.messages && result.messages.length > 0) {
+        const lastMessage = result.messages[result.messages.length - 1];
+        responseContent = lastMessage.content || "";
       }
-    }
 
-    // Create a standard response structure
-    const response: CrawlResult = {
-      success: true,
-      message: "Autonomous crawl completed successfully", 
-      findings: {
-        summary: responseContent || "No specific findings returned",
-        pagesAnalyzed: 0,
-        patternsFound: 0,
-        authenticationRequired: false,
+      // If structured response is available, try to use it
+      if (result.structuredResponse) {
+        try {
+          return result.structuredResponse as CrawlResult;
+        } catch (error) {
+          logger.warn("Failed to parse structured response, falling back to regular response");
+        }
       }
-    };
 
-    return response;
+      // Create a standard response structure
+      const response: CrawlResult = {
+        success: true,
+        message: "Autonomous crawl completed successfully", 
+        findings: {
+          summary: responseContent || "No specific findings returned",
+          pagesAnalyzed: 0,
+          patternsFound: 0,
+          authenticationRequired: false,
+        }
+      };
+
+      return response;
+    } catch (agentError) {
+      logger.error("Agent execution failed:", agentError);
+      
+      // Return a partial success response for some common errors
+      const errorMsg = agentError instanceof Error ? agentError.message : String(agentError);
+      if (errorMsg.includes("Target page, context or browser has been closed")) {
+        logger.warn("Browser was closed during execution, likely due to concurrent operations");
+        return {
+          success: false,
+          message: "Crawl interrupted due to browser closure during concurrent operations",
+          error: "Browser concurrency issue - this may be resolved by reducing parallel operations",
+        };
+      }
+      
+      throw agentError; // Re-throw for other errors
+    }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     logger.error(`Autonomous crawl failed: ${errorMsg}`);

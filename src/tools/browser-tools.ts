@@ -124,6 +124,16 @@ export const createGetPageDOMTool = (): DynamicTool => {
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         logger.error(`GetPageDOMTool error: ${errorMsg}`);
+        
+        // Handle browser closure gracefully
+        if (errorMsg.includes("Target page, context or browser has been closed")) {
+          return JSON.stringify({ 
+            status: "error", 
+            message: "Browser page closed - unable to extract DOM",
+            error_type: "browser_closed"
+          });
+        }
+        
         return JSON.stringify({ status: "error", message: errorMsg });
       }
     }
@@ -184,6 +194,16 @@ export const createGetPageTextTool = (): DynamicTool => {
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         logger.error(`GetPageTextTool error: ${errorMsg}`);
+        
+        // Handle browser closure gracefully
+        if (errorMsg.includes("Target page, context or browser has been closed")) {
+          return JSON.stringify({ 
+            status: "error", 
+            message: "Browser page closed - unable to extract text",
+            error_type: "browser_closed"
+          });
+        }
+        
         return JSON.stringify({ status: "error", message: errorMsg });
       }
     }
@@ -194,18 +214,32 @@ export const createGetPageTextTool = (): DynamicTool => {
  * Click element tool
  */
 export const createClickElementTool = (): DynamicTool => {
-  return {
+  return new DynamicTool({
     name: "click_element",
     description: "Click on an element using a CSS selector. Returns success status and any resulting navigation.",
-    schema: z.object({
-      selector: z.string().describe("CSS selector of the element to click"),
-      page_id: z.string().optional().describe("Optional page identifier (default: 'default')"),
-    }),
-    _call: async (input: { selector: string; page_id?: string }): Promise<string> => {
+    func: async (input: any): Promise<string> => {
       try {
+        // Parse input
+        let parsed;
+        if (typeof input === 'string') {
+          try {
+            parsed = JSON.parse(input);
+          } catch {
+            throw new Error(`Invalid JSON format. Expected: {"selector":"#button"}. Got: ${input}`);
+          }
+        } else if (typeof input === 'object' && input !== null) {
+          parsed = input;
+        } else {
+          throw new Error(`Invalid input type. Expected string or object. Got: ${typeof input}`);
+        }
+        
+        if (!parsed || !parsed.selector) {
+          throw new Error(`Missing required 'selector' field. Expected: {"selector":"#button"}. Got: ${JSON.stringify(parsed)}`);
+        }
+        
         const result = await browserManager.clickElement(
-          input.selector,
-          input.page_id || "default"
+          parsed.selector,
+          parsed.page_id || "default"
         );
         return JSON.stringify(result);
       } catch (error) {
@@ -214,29 +248,40 @@ export const createClickElementTool = (): DynamicTool => {
         return JSON.stringify({ status: "error", message: errorMsg });
       }
     },
-  } as any;
+  });
 };
 
 /**
  * Fill input tool
  */
 export const createFillInputTool = (): DynamicTool => {
-  return {
+  return new DynamicTool({
     name: "fill_input",
     description: "Fill an input field with text. Useful for form submissions and searches.",
-    schema: z.object({
-      selector: z
-        .string()
-        .describe("CSS selector of the input element (e.g., 'input[name=search]')"),
-      value: z.string().describe("The value to fill in the input"),
-      page_id: z.string().optional().describe("Optional page identifier (default: 'default')"),
-    }),
-    _call: async (input: { selector: string; value: string; page_id?: string }): Promise<string> => {
+    func: async (input: any): Promise<string> => {
       try {
+        // Parse input
+        let parsed;
+        if (typeof input === 'string') {
+          try {
+            parsed = JSON.parse(input);
+          } catch {
+            throw new Error(`Invalid JSON format. Expected: {"selector":"#input", "value":"text"}. Got: ${input}`);
+          }
+        } else if (typeof input === 'object' && input !== null) {
+          parsed = input;
+        } else {
+          throw new Error(`Invalid input type. Expected string or object. Got: ${typeof input}`);
+        }
+        
+        if (!parsed || !parsed.selector || !parsed.value) {
+          throw new Error(`Missing required fields. Expected: {"selector":"#input", "value":"text"}. Got: ${JSON.stringify(parsed)}`);
+        }
+        
         const result = await browserManager.fillInput(
-          input.selector,
-          input.value,
-          input.page_id || "default"
+          parsed.selector,
+          parsed.value,
+          parsed.page_id || "default"
         );
         return JSON.stringify(result);
       } catch (error) {
@@ -245,7 +290,7 @@ export const createFillInputTool = (): DynamicTool => {
         return JSON.stringify({ status: "error", message: errorMsg });
       }
     },
-  } as any;
+  });
 };
 
 /**

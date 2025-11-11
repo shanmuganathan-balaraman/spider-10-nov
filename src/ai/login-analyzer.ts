@@ -14,6 +14,36 @@ import { LLMFactory } from './llm-factory';
 
 const logger = createLogger('LoginAnalyzer');
 
+// Simple mutex to prevent concurrent login operations
+let loginOperationInProgress = false;
+const loginQueue: (() => void)[] = [];
+
+/**
+ * Acquire login operation lock
+ */
+async function acquireLoginLock(): Promise<void> {
+  return new Promise((resolve) => {
+    if (!loginOperationInProgress) {
+      loginOperationInProgress = true;
+      resolve();
+    } else {
+      loginQueue.push(() => resolve());
+    }
+  });
+}
+
+/**
+ * Release login operation lock
+ */
+function releaseLoginLock(): void {
+  loginOperationInProgress = false;
+  const next = loginQueue.shift();
+  if (next) {
+    loginOperationInProgress = true;
+    next();
+  }
+}
+
 /**
  * Create LLM for login analysis
  */
@@ -371,17 +401,24 @@ export async function ensureLoggedIn(
   pageId: string = 'default',
   credentials?: { username?: string; password?: string }
 ): Promise<boolean> {
-  logger.info('Using AI to check if login is required...');
+  // Prevent concurrent login operations
+  await acquireLoginLock();
+  
+  try {
+    logger.info('Using AI to check if login is required...');
 
-  const isLoginPage = await detectLoginPage(pageId);
+    const isLoginPage = await detectLoginPage(pageId);
 
-  if (!isLoginPage) {
-    logger.info('AI determined no login required');
-    return true;
+    if (!isLoginPage) {
+      logger.info('AI determined no login required');
+      return true;
+    }
+
+    logger.info('AI detected login page, attempting login...');
+    const loginSuccess = await handleLogin(pageId, credentials);
+
+    return loginSuccess;
+  } finally {
+    releaseLoginLock();
   }
-
-  logger.info('AI detected login page, attempting login...');
-  const loginSuccess = await handleLogin(pageId, credentials);
-
-  return loginSuccess;
 }

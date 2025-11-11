@@ -3,6 +3,7 @@
  * LangChain tools for autonomous crawling integrated with the agent
  */
 
+import { DynamicTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { createLogger } from "../utils/logger";
 import {
@@ -84,21 +85,29 @@ async function evaluateStoppingCondition(type: string, context: string, stats: E
 /**
  * Tool 1: Discover Global Navigation
  */
-export const createDiscoverNavigationTool = () => {
-  return {
+export const createDiscoverNavigationTool = (): DynamicTool => {
+  return new DynamicTool({
     name: "discover_global_navigation",
     description: `Analyzes the current page and detects the global navigation structure of the application.
 Returns the navigation items, feature entry points, and business priorities.
 Use this at the beginning of crawling to understand the application structure.`,
-    schema: z.object({
-      page_id: z
-        .string()
-        .optional()
-        .describe("Optional page identifier (default: 'default')"),
-    }),
-    _call: async (input: { page_id?: string }): Promise<string> => {
+    func: async (input: any): Promise<string> => {
       try {
-        const pageId = input.page_id || "default";
+        // Parse input
+        let parsed;
+        if (typeof input === 'string') {
+          try {
+            parsed = JSON.parse(input);
+          } catch {
+            parsed = {};
+          }
+        } else if (typeof input === 'object' && input !== null) {
+          parsed = input;
+        } else {
+          parsed = {};
+        }
+        
+        const pageId = parsed.page_id || "default";
 
         logger.info(`DiscoverGlobalNavigationTool called with page_id: ${pageId}`);
 
@@ -161,27 +170,35 @@ Use this at the beginning of crawling to understand the application structure.`,
         return JSON.stringify({ success: false, error: errorMsg });
       }
     },
-  } as any;
+  });
 };
 
 /**
  * Tool 2: Analyze Current Page
  */
-export const createAnalyzeCurrentPageTool = () => {
-  return {
+export const createAnalyzeCurrentPageTool = (): DynamicTool => {
+  return new DynamicTool({
     name: "analyze_current_page",
     description: `Performs comprehensive AI analysis of the current page.
 Identifies all interactive elements, page type, forms, modals, and cross-feature links.
 Returns detailed information about what can be done on this page.`,
-    schema: z.object({
-      page_id: z
-        .string()
-        .optional()
-        .describe("Optional page identifier (default: 'default')"),
-    }),
-    _call: async (input: { page_id?: string }): Promise<string> => {
+    func: async (input: any): Promise<string> => {
       try {
-        const pageId = input.page_id || "default";
+        // Parse input
+        let parsed;
+        if (typeof input === 'string') {
+          try {
+            parsed = JSON.parse(input);
+          } catch {
+            parsed = {};
+          }
+        } else if (typeof input === 'object' && input !== null) {
+          parsed = input;
+        } else {
+          parsed = {};
+        }
+        
+        const pageId = parsed.page_id || "default";
 
         logger.info(`AnalyzeCurrentPageTool called with page_id: ${pageId}`);
 
@@ -262,26 +279,34 @@ Returns detailed information about what can be done on this page.`,
         return JSON.stringify({ success: false, error: errorMsg });
       }
     },
-  } as any;
+  });
 };
 
 /**
  * Tool 3: Detect Page Pattern
  */
-export const createDetectPagePatternTool = (patternDetector: PatternDetector) => {
-  return {
+export const createDetectPagePatternTool = (patternDetector: PatternDetector): DynamicTool => {
+  return new DynamicTool({
     name: "detect_page_pattern",
     description: `Analyzes the current page structure and checks if it matches any known patterns.
 Returns pattern match information which can be used to quickly catalog similar pages without deep analysis.`,
-    schema: z.object({
-      page_id: z
-        .string()
-        .optional()
-        .describe("Optional page identifier (default: 'default')"),
-    }),
-    _call: async (input: { page_id?: string }): Promise<string> => {
+    func: async (input: any): Promise<string> => {
       try {
-        const pageId = input.page_id || "default";
+        // Parse input
+        let parsed;
+        if (typeof input === 'string') {
+          try {
+            parsed = JSON.parse(input);
+          } catch {
+            parsed = {};
+          }
+        } else if (typeof input === 'object' && input !== null) {
+          parsed = input;
+        } else {
+          parsed = {};
+        }
+        
+        const pageId = parsed.page_id || "default";
 
         logger.info(`Detecting page pattern: ${pageId}`);
 
@@ -335,59 +360,60 @@ Returns pattern match information which can be used to quickly catalog similar p
         return JSON.stringify({ success: false, error: errorMsg });
       }
     },
-  } as any;
+  });
 };
 
 /**
  * Tool 4: Evaluate Stopping Condition
  */
-export const createEvaluateStoppingConditionTool = () => {
-  return {
+export const createEvaluateStoppingConditionTool = (): DynamicTool => {
+  return new DynamicTool({
     name: "evaluate_stopping_condition",
     description: `Evaluates whether the exploration of the current feature should be stopped.
 Based on coverage, patterns detected, and diminishing returns.
 Use this to decide when to move to the next feature.`,
-    schema: z.object({
-      pages_explored: z.number().describe("Number of pages explored so far"),
-      max_pages_limit: z
-        .number()
-        .describe("Maximum pages allowed per feature"),
-      depth_reached: z.number().describe("Current depth level"),
-      max_depth_limit: z.number().describe("Maximum depth allowed"),
-      new_pages_last_batch: z.number().describe("New pages discovered in last batch"),
-      estimated_total_pages: z
-        .number()
-        .describe("Estimated total pages in this feature"),
-      page_types_found: z
-        .array(z.string())
-        .describe("Unique page types found so far"),
-    }),
-    _call: async (input: {
-      pages_explored: number;
-      max_pages_limit: number;
-      depth_reached: number;
-      max_depth_limit: number;
-      new_pages_last_batch: number;
-      estimated_total_pages: number;
-      page_types_found: string[];
-    }): Promise<string> => {
+    func: async (input: any): Promise<string> => {
       try {
-        logger.info("Evaluating stopping condition");
+        // Parse input
+        let parsed;
+        if (typeof input === 'string') {
+          try {
+            parsed = JSON.parse(input);
+          } catch {
+            parsed = {};
+          }
+        } else if (typeof input === 'object' && input !== null) {
+          parsed = input;
+        } else {
+          parsed = {};
+        }
+        
+        const params = {
+          pages_explored: parsed.pages_explored || 0,
+          max_pages_limit: parsed.max_pages_limit || 100,
+          depth_reached: parsed.depth_reached || 0,
+          max_depth_limit: parsed.max_depth_limit || 5,
+          new_pages_last_batch: parsed.new_pages_last_batch || 0,
+          estimated_total_pages: parsed.estimated_total_pages || 0,
+          page_types_found: parsed.page_types_found || [],
+        };
+
+        logger.info(`Evaluating stopping condition: ${JSON.stringify(params)}`);
 
         const stats: ExplorationStats = {
           pagesAnalyzed: 0,
           actionsDiscovered: 0,
           patternsFound: 0,
           duplicatePages: 0,
-          pagesExplored: input.pages_explored,
-          maxPagesLimit: input.max_pages_limit,
-          depthReached: input.depth_reached,
-          maxDepthLimit: input.max_depth_limit,
-          newPagesDiscoveredLastBatch: input.new_pages_last_batch,
-          totalNewPagesThisBatch: input.new_pages_last_batch,
-          estimatedTotalPages: input.estimated_total_pages,
-          uniquePageTypesFound: input.page_types_found.length,
-          lastPageTypes: input.page_types_found,
+          pagesExplored: params.pages_explored,
+          maxPagesLimit: params.max_pages_limit,
+          depthReached: params.depth_reached,
+          maxDepthLimit: params.max_depth_limit,
+          newPagesDiscoveredLastBatch: params.new_pages_last_batch,
+          totalNewPagesThisBatch: params.new_pages_last_batch,
+          estimatedTotalPages: params.estimated_total_pages,
+          uniquePageTypesFound: params.page_types_found.length,
+          lastPageTypes: params.page_types_found,
           timeElapsed: 0,
           timeLimit: 30000,
         };
@@ -409,7 +435,7 @@ Use this to decide when to move to the next feature.`,
           "feature",
           "feature",
           stats,
-          new Set(input.page_types_found)
+          new Set(params.page_types_found)
         );
 
         return JSON.stringify({
@@ -428,47 +454,55 @@ Use this to decide when to move to the next feature.`,
         return JSON.stringify({ success: false, error: errorMsg });
       }
     },
-  } as any;
+  });
 };
 
 /**
  * Tool 5: Record Feature Information
  */
-export const createRecordFeatureInfoTool = () => {
-  return {
+export const createRecordFeatureInfoTool = (): DynamicTool => {
+  return new DynamicTool({
     name: "record_feature_info",
     description: `Records information about a discovered feature for the knowledge graph.
 Should be called after exploring a feature to update the sitemap and graph.`,
-    schema: z.object({
-      feature_id: z.string().describe("Unique feature identifier"),
-      feature_name: z.string().describe("Human-readable feature name"),
-      entry_url: z.string().describe("URL that enters this feature"),
-      priority: z.number().describe("Business priority (1-300: primary, 301-600: secondary, 601+: utility)"),
-      pages_explored: z.number().describe("Number of pages in this feature"),
-      page_types: z.array(z.string()).describe("Types of pages found in this feature"),
-    }),
-    _call: async (input: {
-      feature_id: string;
-      feature_name: string;
-      entry_url: string;
-      priority: number;
-      pages_explored: number;
-      page_types: string[];
-    }): Promise<string> => {
+    func: async (input: any): Promise<string> => {
       try {
-        logger.info(`Recording feature info: ${input.feature_name}`);
+        // Parse input
+        let parsed;
+        if (typeof input === 'string') {
+          try {
+            parsed = JSON.parse(input);
+          } catch {
+            parsed = {};
+          }
+        } else if (typeof input === 'object' && input !== null) {
+          parsed = input;
+        } else {
+          parsed = {};
+        }
+        
+        const params = {
+          feature_id: parsed.feature_id || '',
+          feature_name: parsed.feature_name || '',
+          entry_url: parsed.entry_url || '',
+          priority: parsed.priority || 999,
+          pages_explored: parsed.pages_explored || 0,
+          page_types: parsed.page_types || [],
+        };
+
+        logger.info(`Recording feature info: ${params.feature_name}`);
 
         // This would be called by the orchestrator to update state
         // For now, just validate and confirm
         return JSON.stringify({
           success: true,
-          featureId: input.feature_id,
-          featureName: input.feature_name,
-          entryUrl: input.entry_url,
-          priority: input.priority,
-          pagesExplored: input.pages_explored,
-          pageTypes: input.page_types,
-          message: `Feature ${input.feature_name} recorded with ${input.pages_explored} pages and ${input.page_types.length} unique page types`,
+          featureId: params.feature_id,
+          featureName: params.feature_name,
+          entryUrl: params.entry_url,
+          priority: params.priority,
+          pagesExplored: params.pages_explored,
+          pageTypes: params.page_types,
+          message: `Feature ${params.feature_name} recorded with ${params.pages_explored} pages and ${params.page_types.length} unique page types`,
         });
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
@@ -476,19 +510,18 @@ Should be called after exploring a feature to update the sitemap and graph.`,
         return JSON.stringify({ success: false, error: errorMsg });
       }
     },
-  } as any;
+  });
 };
 
 /**
  * Tool 6: Get Exploration Status
  */
-export const createGetExplorationStatusTool = () => {
-  return {
+export const createGetExplorationStatusTool = (): DynamicTool => {
+  return new DynamicTool({
     name: "get_exploration_status",
     description: `Returns the current exploration status including pages explored, features found, and estimated progress.
 Use this to monitor overall crawling progress.`,
-    schema: z.object({}),
-    _call: async (): Promise<string> => {
+    func: async (input: any): Promise<string> => {
       try {
         logger.info("Getting exploration status");
 
@@ -511,7 +544,7 @@ Use this to monitor overall crawling progress.`,
         return JSON.stringify({ success: false, error: errorMsg });
       }
     },
-  } as any;
+  });
 };
 
 /**
@@ -519,7 +552,7 @@ Use this to monitor overall crawling progress.`,
  */
 export function getCrawlerAnalysisTools(
   patternDetector?: PatternDetector
-): any[] {
+): DynamicTool[] {
   const tools = [
     createDiscoverNavigationTool(),
     createAnalyzeCurrentPageTool(),
