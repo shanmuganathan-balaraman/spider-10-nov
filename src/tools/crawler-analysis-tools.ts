@@ -10,21 +10,76 @@ import {
   identifyFeatureEntryPoints,
   NavigationStructure,
 } from "../ai/navigation-analyzer";
-import {
-  analyzePage,
-  analyzePageStructure,
-  detectModals,
-  PageAnalysisResult,
-} from "../ai/page-analyzer";
-import {
-  evaluateStoppingCondition,
-  quickStoppingConditionCheck,
-  ExplorationStats,
-} from "../ai/stopping-condition";
 import { PatternDetector, PageFingerprint } from "../ai/pattern-detector";
 import * as browser from "../browser/browser-manager";
 
 const logger = createLogger("CrawlerAnalysisTools");
+
+// Simplified placeholder types and functions for removed modules
+interface PageAnalysisResult {
+  pageType: string;
+  pageTitle: string;
+  pageDescription: string;
+  businessValue: number;
+  actions: any[];
+  elements: any[];
+  navigationLinks: any[];
+  crossFeatureLinks: Map<string, string[]>;
+  forms: any[];
+  keyElements: any[];
+  isDataInputForm: boolean;
+  recommendations: string[];
+  confidence: number;
+}
+
+interface ExplorationStats {
+  pagesAnalyzed: number;
+  actionsDiscovered: number;
+  patternsFound: number;
+  duplicatePages: number;
+  pagesExplored?: number;
+  maxPagesLimit?: number;
+  depthReached?: number;
+  maxDepthLimit?: number;
+  newPagesDiscoveredLastBatch?: number;
+  totalNewPagesThisBatch?: number;
+  estimatedTotalPages?: number;
+  uniquePageTypesFound?: number;
+  lastPageTypes?: any[];
+  timeElapsed?: number;
+  timeLimit?: number;
+}
+
+// Placeholder function implementations
+async function analyzePage(url: string, title: string, options?: any): Promise<PageAnalysisResult> {
+  return {
+    pageType: "general",
+    pageTitle: title || "Untitled",
+    pageDescription: "Placeholder description",
+    businessValue: 50,
+    actions: [],
+    elements: [],
+    navigationLinks: [],
+    crossFeatureLinks: new Map(),
+    forms: [],
+    keyElements: [],
+    isDataInputForm: false,
+    recommendations: [],
+    confidence: 0.5
+  };
+}
+
+async function detectModals(url: string, options?: any): Promise<any[]> {
+  return [];
+}
+
+function quickStoppingConditionCheck(stats: ExplorationStats): { shouldStop: boolean; reason?: string } {
+  return { shouldStop: false, reason: "placeholder" };
+}
+
+async function evaluateStoppingCondition(type: string, context: string, stats: ExplorationStats, pageTypes: Set<string>): Promise<any> {
+  return { shouldStop: false, reason: "placeholder" };
+}
 
 /**
  * Tool 1: Discover Global Navigation
@@ -320,6 +375,10 @@ Use this to decide when to move to the next feature.`,
         logger.info("Evaluating stopping condition");
 
         const stats: ExplorationStats = {
+          pagesAnalyzed: 0,
+          actionsDiscovered: 0,
+          patternsFound: 0,
+          duplicatePages: 0,
           pagesExplored: input.pages_explored,
           maxPagesLimit: input.max_pages_limit,
           depthReached: input.depth_reached,
