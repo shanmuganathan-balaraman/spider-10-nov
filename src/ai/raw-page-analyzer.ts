@@ -86,14 +86,14 @@ export async function extractRawPageData(pageId: string = 'default'): Promise<Ra
 
     // Get page/browser instance to extract viewport
     const page = browserManager.getPage(pageId);
-    const viewport = page ? await page.viewportSize() : { width: 1920, height: 1080 };
+    const viewport = page ? await page.viewportSize() : { width: config.viewportWidth, height: config.viewportHeight };
 
     return {
       url,
       title,
       html,
       text,
-      viewport: viewport || { width: 1920, height: 1080 },
+      viewport: viewport || { width: config.viewportWidth, height: config.viewportHeight },
       extractedAt: new Date().toISOString(),
     };
   } catch (error) {

@@ -26,6 +26,8 @@ export const config = {
   // Browser
   headlessMode: process.env.HEADLESS_MODE !== "false",
   browserTimeout: parseInt(process.env.BROWSER_TIMEOUT || "30000", 10),
+  viewportWidth: parseInt(process.env.VIEWPORT_WIDTH || "1366", 10),
+  viewportHeight: parseInt(process.env.VIEWPORT_HEIGHT || "768", 10),
 
   // Application
   port: parseInt(process.env.PORT || "3000", 10),
