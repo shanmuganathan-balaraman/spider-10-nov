@@ -75,11 +75,6 @@ export async function initializeAutonomousCrawlerAgent(
   try {
     logger.info("Initializing Autonomous Crawler Agent...");
 
-    // Set OPENAI_API_KEY for OpenAI client (TogetherAI is OpenAI-compatible)
-    if (config.togetherAiApiKey) {
-      process.env.OPENAI_API_KEY = config.togetherAiApiKey;
-    }
-
     // Update config
     if (crawlConfig) {
       autonomousCrawlerState.config = {
@@ -123,7 +118,9 @@ export async function initializeAutonomousCrawlerAgent(
     logger.info(
       `Autonomous Crawler Agent initialized with ${autonomousCrawlerState.tools.length} tools`
     );
-    logger.info(`Using model: ${config.togetherAiModel}`);
+    
+    // Log the actual model being used
+    logger.info(`Using model: ${config.aiModel} (${config.aiProvider})`);
     logger.info(`Pattern threshold: ${autonomousCrawlerState.config.patternThreshold}`);
   } catch (error) {
     logger.error("Failed to initialize autonomous crawler agent:", error);

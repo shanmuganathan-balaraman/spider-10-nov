@@ -194,13 +194,27 @@ export const createGetPageTextTool = (): DynamicTool => {
  * Click element tool
  */
 export const createClickElementTool = (): DynamicTool => {
-  return new DynamicTool({
+  return {
     name: "click_element",
-    description: "Click on an element. Not yet implemented for DynamicTool interface.",
-    func: async (input: string): Promise<string> => {
-      return JSON.stringify({ status: "error", message: "Tool not yet implemented with DynamicTool interface" });
-    }
-  });
+    description: "Click on an element using a CSS selector. Returns success status and any resulting navigation.",
+    schema: z.object({
+      selector: z.string().describe("CSS selector of the element to click"),
+      page_id: z.string().optional().describe("Optional page identifier (default: 'default')"),
+    }),
+    _call: async (input: { selector: string; page_id?: string }): Promise<string> => {
+      try {
+        const result = await browserManager.clickElement(
+          input.selector,
+          input.page_id || "default"
+        );
+        return JSON.stringify(result);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        logger.error(`ClickElementTool error: ${errorMsg}`);
+        return JSON.stringify({ status: "error", message: errorMsg });
+      }
+    },
+  } as any;
 };
 
 /**

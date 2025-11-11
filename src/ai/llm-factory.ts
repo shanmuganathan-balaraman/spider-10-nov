@@ -1,160 +1,99 @@
-/**
- * AI Provider Factory
- * Creates the appropriate LLM instance based on configuration
- * Supports both OpenAI and TogetherAI providers
- */
-
 import { ChatOpenAI } from '@langchain/openai';
-import { config } from '../config';
-import { createLogger } from '../utils/logger';
 
-const logger = createLogger('LLMFactory');
-
-export interface LLMOptions {
+interface LLMOptions {
   temperature?: number;
   maxTokens?: number;
-  modelName?: string;
 }
 
-/**
- * Create LLM instance based on configured provider
- */
 export function createLLM(options: LLMOptions = {}): ChatOpenAI {
-  const {
-    temperature = 0.2,
-    maxTokens = 8000,
-    modelName
-  } = options;
+  const provider = process.env.AI_PROVIDER || 'openai';
+  const modelName = process.env.AI_MODEL;
+  const temperature = options.temperature ?? parseFloat(process.env.AI_TEMPERATURE || '0.7');
+  const maxTokens = options.maxTokens ?? parseInt(process.env.AI_MAX_TOKENS || '4000');
 
-  // Determine which provider to use
-  const provider = config.aiProvider.toLowerCase();
-  
-  logger.info(`Creating LLM with provider: ${provider}`);
+  if (!modelName) {
+    throw new Error('AI_MODEL environment variable is required');
+  }
 
-  switch (provider) {
+  console.log(`Creating LLM: ${provider}/${modelName} (temp: ${temperature}, maxTokens: ${maxTokens})`);
+
+  switch (provider.toLowerCase()) {
     case 'openai':
-      return createOpenAILLM({ temperature, maxTokens, modelName });
-    
+      return createOpenAILLM({ modelName, temperature, maxTokens });
+      
     case 'togetherai':
-    case 'together':
-      return createTogetherAILLM({ temperature, maxTokens, modelName });
-    
+      return createTogetherAILLM({ modelName, temperature, maxTokens });
+      
+    case 'anthropic':
+      // Future: Add Anthropic support
+      throw new Error('Anthropic provider not yet implemented');
+      
     default:
-      logger.warn(`Unknown AI provider: ${provider}. Falling back to TogetherAI.`);
-      return createTogetherAILLM({ temperature, maxTokens, modelName });
+      throw new Error(`Unsupported AI provider: ${provider}`);
   }
 }
 
-/**
- * Create OpenAI LLM instance
- */
-function createOpenAILLM(options: LLMOptions): ChatOpenAI {
-  const { temperature, maxTokens, modelName } = options;
-  
-  if (!config.openaiApiKey) {
-    throw new Error('OPENAI_API_KEY is required when using OpenAI provider');
+function createOpenAILLM({ 
+  modelName, 
+  temperature, 
+  maxTokens 
+}: { 
+  modelName: string; 
+  temperature: number; 
+  maxTokens: number; 
+}): ChatOpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is required');
   }
 
-  const llmConfig: any = {
-    apiKey: config.openaiApiKey,
-    model: modelName || config.openaiModel,
+  console.log(`Using OpenAI API key ending in: ...${apiKey.slice(-4)}`);
+  
+  return new ChatOpenAI({
+    apiKey,
+    modelName,
     temperature,
     maxTokens,
-  };
-
-  // Add custom base URL if provided
-  if (config.openaiBaseUrl) {
-    llmConfig.configuration = {
-      baseURL: config.openaiBaseUrl,
-    };
-  }
-
-  logger.info(`Created OpenAI LLM with model: ${llmConfig.model}`);
-  return new ChatOpenAI(llmConfig);
-}
-
-/**
- * Create TogetherAI LLM instance (OpenAI-compatible)
- */
-function createTogetherAILLM(options: LLMOptions): ChatOpenAI {
-  const { temperature, maxTokens, modelName } = options;
-  
-  if (!config.togetherAiApiKey) {
-    throw new Error('TOGETHER_API_KEY is required when using TogetherAI provider');
-  }
-
-  const llmConfig = {
-    apiKey: config.togetherAiApiKey,
-    model: modelName || config.togetherAiModel,
     configuration: {
-      baseURL: 'https://api.together.xyz/v1',
-    },
-    temperature,
-    maxTokens,
-  };
-
-  logger.info(`Created TogetherAI LLM with model: ${llmConfig.model}`);
-  return new ChatOpenAI(llmConfig);
+      baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
+    }
+  });
 }
 
-/**
- * Create LLM for different AI analyzer types with appropriate defaults
- */
+function createTogetherAILLM({ 
+  modelName, 
+  temperature, 
+  maxTokens 
+}: { 
+  modelName: string; 
+  temperature: number; 
+  maxTokens: number; 
+}): ChatOpenAI {
+  const apiKey = process.env.TOGETHER_API_KEY;
+  if (!apiKey) {
+    throw new Error('TOGETHER_API_KEY environment variable is required');
+  }
+
+  return new ChatOpenAI({
+    apiKey,
+    modelName,
+    temperature,
+    maxTokens,
+    configuration: {
+      baseURL: process.env.TOGETHER_BASE_URL || 'https://api.together.xyz/v1'
+    }
+  });
+}
+
+// Simple factory object that just uses the configured model for everything
 export const LLMFactory = {
-  /**
-   * For raw page analysis - needs more tokens for complex HTML analysis
-   */
-  createRawPageAnalyzerLLM: (): ChatOpenAI => {
-    return createLLM({
-      temperature: 0.2,
-      maxTokens: 8000,
-    });
-  },
-
-  /**
-   * For login analysis - lower temperature for consistent detection
-   */
-  createLoginAnalyzerLLM: (): ChatOpenAI => {
-    return createLLM({
-      temperature: 0.1,
-      maxTokens: 2000,
-    });
-  },
-
-  /**
-   * For modal detection - deterministic detection
-   */
-  createModalDetectorLLM: (): ChatOpenAI => {
-    return createLLM({
-      temperature: 0.1,
-      maxTokens: 2000,
-    });
-  },
-
-  /**
-   * For navigation analysis - comprehensive navigation analysis
-   */
-  createNavigationAnalyzerLLM: (): ChatOpenAI => {
-    return createLLM({
-      temperature: 0.1,
-      maxTokens: 8000,
-    });
-  },
-
-  /**
-   * For autonomous crawler planning
-   */
-  createCrawlerPlannerLLM: (): ChatOpenAI => {
-    return createLLM({
-      temperature: 0.3,
-      maxTokens: 4000,
-    });
-  },
-
-  /**
-   * Generic LLM factory method
-   */
-  create: createLLM,
+  createRawPageAnalyzerLLM: (): ChatOpenAI => createLLM({ temperature: 0.2, maxTokens: 8000 }),
+  createLoginAnalyzerLLM: (): ChatOpenAI => createLLM({ temperature: 0.1, maxTokens: 2000 }),
+  createModalDetectorLLM: (): ChatOpenAI => createLLM({ temperature: 0.1, maxTokens: 2000 }),
+  createAutonomousCrawlerLLM: (): ChatOpenAI => createLLM({ temperature: 0.3, maxTokens: 4000 }),
+  createNavigationAnalyzerLLM: (): ChatOpenAI => createLLM({ temperature: 0.1, maxTokens: 8000 }),
+  createCrawlerPlannerLLM: (): ChatOpenAI => createLLM({ temperature: 0.3, maxTokens: 4000 }),
+  create: createLLM
 };
 
 export default LLMFactory;

@@ -8,17 +8,20 @@ export const config = {
   isDevelopment: process.env.NODE_ENV !== "production",
   isProduction: process.env.NODE_ENV === "production",
 
-  // AI Provider Configuration
-  aiProvider: process.env.AI_PROVIDER || "togetherai", // 'openai' or 'togetherai'
-  
-  // TogetherAI Configuration
-  togetherAiApiKey: process.env.TOGETHER_API_KEY,
-  togetherAiModel: process.env.TOGETHER_MODEL || "meta-llama/Llama-3-70b-chat-hf",
+  // AI Provider Configuration (Simplified)
+  aiProvider: process.env.AI_PROVIDER || "openai",
+  aiModel: process.env.AI_MODEL || "gpt-4o-mini",
+  aiTemperature: parseFloat(process.env.AI_TEMPERATURE || "0.7"),
+  aiMaxTokens: parseInt(process.env.AI_MAX_TOKENS || "4000"),
 
-  // OpenAI Configuration
+  // API Keys
   openaiApiKey: process.env.OPENAI_API_KEY,
-  openaiModel: process.env.OPENAI_MODEL || "gpt-4",
-  openaiBaseUrl: process.env.OPENAI_BASE_URL, // Optional for custom endpoints
+  togetherAiApiKey: process.env.TOGETHER_API_KEY,
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+
+  // Optional API Endpoints
+  openaiBaseUrl: process.env.OPENAI_BASE_URL,
+  togetherBaseUrl: process.env.TOGETHER_BASE_URL,
 
   // Browser
   headlessMode: process.env.HEADLESS_MODE !== "false",
@@ -33,12 +36,3 @@ export const config = {
   maxRetries: 3,
   requestTimeout: 30000,
 };
-
-// Validation
-if (config.isProduction) {
-  if (config.aiProvider === "openai" && !config.openaiApiKey) {
-    console.warn("Warning: OPENAI_API_KEY is not set but OpenAI provider is selected");
-  } else if (config.aiProvider === "togetherai" && !config.togetherAiApiKey) {
-    console.warn("Warning: TOGETHER_API_KEY is not set but TogetherAI provider is selected");
-  }
-}
